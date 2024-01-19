@@ -1,4 +1,4 @@
-package com.example.projectboard.dto.security;
+package com.example.projectboardadmin.dto.security;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

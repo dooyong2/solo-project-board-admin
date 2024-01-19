@@ -1,7 +1,7 @@
 package com.example.projectboardadmin.dto.security;
 
-import com.example.projectboard.dto.UserAccountDto;
-import lombok.Getter;
+import com.example.projectboardadmin.dto.UserAccountDto;
+import com.example.projectboardadmin.domain.constant.RoleType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record BoardPrincipal(
+public record BoardAdminPrincipal(
         String username,
         String password,
         Collection<? extends GrantedAuthority> authorities,
@@ -22,21 +22,19 @@ public record BoardPrincipal(
         Map<String, Object> oAuth2Attributes
 ) implements UserDetails, OAuth2User {
 
-    public static BoardPrincipal of(String username, String password, String email, String nickname, String memo) {
-        return BoardPrincipal.of(username, password, email, nickname, memo, Map.of());
+    public static BoardAdminPrincipal of(String username, String password, Set<RoleType> roleTypes, String email, String nickname, String memo) {
+        return BoardAdminPrincipal.of(username, password, roleTypes, email, nickname, memo, Map.of());
     }
 
-    public static BoardPrincipal of(String username, String password, String email, String nickname, String memo, Map<String, Object> oAuth2Attributes) {
-        // 현재 인증만 하고 권한을 다루지 않아 임의 세팅
-        Set<RoleType> roleTypes = Set.of(RoleType.USER);
-
-        return new BoardPrincipal(
+    public static BoardAdminPrincipal of(String username, String password, Set<RoleType> roleTypes, String email, String nickname, String memo, Map<String, Object> oAuth2Attributes) {
+        return new BoardAdminPrincipal(
                 username,
                 password,
                 roleTypes.stream()
-                        .map(RoleType::getName)
+                        .map(RoleType::getRoleName)
                         .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toUnmodifiableSet()),
+                        .collect(Collectors.toUnmodifiableSet())
+                ,
                 email,
                 nickname,
                 memo,
@@ -44,10 +42,11 @@ public record BoardPrincipal(
         );
     }
 
-    public static BoardPrincipal from(UserAccountDto dto) {
-        return BoardPrincipal.of(
+    public static BoardAdminPrincipal from(UserAccountDto dto) {
+        return BoardAdminPrincipal.of(
                 dto.userId(),
                 dto.userPassword(),
+                dto.roleTypes(),
                 dto.email(),
                 dto.nickname(),
                 dto.memo()
@@ -58,43 +57,28 @@ public record BoardPrincipal(
         return UserAccountDto.of(
                 username,
                 password,
+                authorities.stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .map(RoleType::valueOf)
+                        .collect(Collectors.toUnmodifiableSet())
+                ,
                 email,
                 nickname,
                 memo
         );
     }
 
-    @Override public String getUsername() {
-        return username;
-    }
-    @Override public String getPassword() {
-        return password;
-    }
-    @Override public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
-    }
 
-    @Override public boolean isAccountNonExpired() {
-        return true;
-    }
-    @Override public boolean isAccountNonLocked() {
-        return true;
-    }
-    @Override public boolean isCredentialsNonExpired() {
-        return true;
-    }
-    @Override public boolean isEnabled() {
-        return true;
-    }
+    @Override public String getUsername() { return username; }
+    @Override public String getPassword() { return password; }
+    @Override public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
 
-    @Override
-    public Map<String, Object> getAttributes() {
-        return oAuth2Attributes;
-    }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 
-    @Override
-    public String getName() {
-        return username;
-    }
+    @Override public Map<String, Object> getAttributes() { return oAuth2Attributes; }
+    @Override public String getName() { return username; }
 
 }
